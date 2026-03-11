@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>株式市場トピック｜2026-03-11 前場引け</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ffffff;
+  --surface: #f7f8fa;
+  --surface2: #eef0f5;
+  --border: #e0e4ef;
+  --text: #2c3347;
+  --text-dim: #8a93aa;
+  --text-mid: #5a6278;
+  --text-bright: #0f1624;
+  --accent: #b8922a;
+  --pos: #1a9e60;
+  --neg: #c93030;
+  --blue: #1a6fd4;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(26,111,212,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26,111,212,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  position: relative; z-index: 1;
+}
+
+/* ヘッダー */
+header {
+  border-left: 4px solid var(--accent);
+  padding-left: 20px;
+  margin-bottom: 40px;
+  animation: fadeSlide 0.5s ease both;
+}
+.h-meta {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  padding: 3px 10px; border-radius: 2px;
+}
+.b-time { background: rgba(184,146,42,0.1); color: var(--accent); border: 1px solid rgba(184,146,42,0.3); }
+.b-src  { background: rgba(26,111,212,0.08); color: var(--blue); border: 1px solid rgba(26,111,212,0.2); }
+.b-live { background: rgba(26,158,96,0.08); color: var(--pos); border: 1px solid rgba(26,158,96,0.25); }
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 6vw, 68px);
+  letter-spacing: 0.04em;
+  color: var(--text-bright);
+  line-height: 0.9;
+  margin-bottom: 10px;
+}
+h1 span { color: var(--accent); }
+.h-sub { font-size: 12px; color: var(--text-mid); line-height: 1.9; }
+
+/* マーケットサマリー */
+.market-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.m-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 16px 18px;
+  position: relative; overflow: hidden;
+}
+.m-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+.m-card.nk::before  { background: var(--pos); }
+.m-card.fx::before  { background: var(--blue); }
+.m-card.oil::before { background: var(--neg); }
+.m-card.oracle::before { background: var(--accent); }
+.m-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.18em;
+  color: var(--text-dim); margin-bottom: 8px;
+}
+.m-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px; font-weight: 600;
+  color: var(--text-bright);
+}
+.m-sub { font-size: 11px; color: var(--text-mid); margin-top: 5px; }
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+
+/* セクション */
+.section { margin-bottom: 36px; }
+.section-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.2em;
+  color: var(--text-dim);
+}
+.section-title {
+  font-size: 15px; font-weight: 500;
+  color: var(--text-bright);
+}
+
+/* メインニュースカード */
+.main-news {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--pos);
+  border-radius: 3px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  animation: fadeSlide 0.5s ease 0.1s both;
+}
+.news-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.news-title {
+  font-size: 15px; font-weight: 500;
+  color: var(--text-bright); line-height: 1.6;
+  margin-bottom: 8px;
+}
+.news-body {
+  font-size: 12px; color: var(--text-mid);
+  line-height: 1.9;
+}
+
+/* ニュースリスト */
+.news-list { display: flex; flex-direction: column; gap: 10px; }
+.news-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 14px 18px;
+  align-items: start;
+  animation: fadeSlide 0.5s ease both;
+}
+.ni-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--text-dim);
+  padding-top: 2px;
+}
+.ni-title {
+  font-size: 13px; font-weight: 400;
+  color: var(--text); line-height: 1.6;
+}
+.ni-tag {
+  display: inline-block;
+  font-size: 10px; font-weight: 500;
+  padding: 2px 7px; border-radius: 2px;
+  margin-right: 6px; margin-top: 4px;
+  border: 1px solid;
+}
+
+/* 騰落ランキング */
+.rank-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+.rank-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.rank-head {
+  padding: 10px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  font-weight: 600;
+}
+.rank-head.rise { background: rgba(26,158,96,0.08); color: var(--pos); }
+.rank-head.drop { background: rgba(201,48,48,0.08); color: var(--neg); }
+.rank-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.rank-no {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--text-dim);
+  min-width: 20px;
+}
+.rank-name { color: var(--text); flex: 1; padding: 0 10px; }
+.rank-pct {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; font-weight: 600;
+}
+
+/* 注目銘柄 */
+.watch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.watch-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 16px;
+}
+.wc-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.wc-name {
+  font-size: 14px; font-weight: 500;
+  color: var(--text-bright); margin-bottom: 8px;
+}
+.wc-body { font-size: 11px; color: var(--text-mid); line-height: 1.8; }
+.wc-tag {
+  display: inline-block; margin-top: 8px;
+  font-size: 10px; font-weight: 500;
+  padding: 2px 8px; border-radius: 2px; border: 1px solid;
+}
+
+/* まとめ */
+.summary-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 3px;
+  padding: 20px 24px;
+}
+.summary-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  color: var(--accent); margin-bottom: 14px;
+}
+.summary-body { font-size: 13px; color: var(--text); line-height: 2.0; }
+
+footer {
+  margin-top: 40px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.12em;
+  color: var(--text-dim);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media(max-width: 768px) {
+  .market-bar { grid-template-columns: 1fr 1fr; }
+  .rank-grid  { grid-template-columns: 1fr; }
+  .watch-grid { grid-template-columns: 1fr; }
+  .news-item  { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="h-meta">
+    <span class="badge b-live">● 前場引け</span>
+    <span class="badge b-time">2026-03-11 12:02</span>
+    <span class="badge b-src">SOURCE: 日本経済新聞</span>
+  </div>
+  <h1>株式市場<span>トピック</span></h1>
+  <p class="h-sub">
+    日経平均：前場引け +1,139円（+2.10%）｜5万5,387円<br>
+    米オラクル好決算を受けAI・ハイテク株主導で続伸。ホルムズ海峡巡る思惑も継続。
+  </p>
+</header>
+
+<!-- マーケットサマリー -->
+<div class="market-bar">
+  <div class="m-card nk">
+    <div class="m-label">NIKKEI 225 / 前場引け</div>
+    <div class="m-val pos">55,387</div>
+    <div class="m-sub"><span class="pos">+1,139円（+2.10%）</span></div>
+  </div>
+  <div class="m-card fx">
+    <div class="m-label">USD/JPY</div>
+    <div class="m-val">148円台</div>
+    <div class="m-sub">やや円安基調で推移</div>
+  </div>
+  <div class="m-card oil">
+    <div class="m-label">WTI 原油（前日）</div>
+    <div class="m-val neg">$76台</div>
+    <div class="m-sub">停戦発言で$119→$76急落後</div>
+  </div>
+  <div class="m-card oracle">
+    <div class="m-label">トリガー：米オラクル</div>
+    <div class="m-val">好決算</div>
+    <div class="m-sub">時間外↑→AI株波及</div>
+  </div>
+</div>
+
+<!-- メインニュース -->
+<div class="section">
+  <div class="section-head">
+    <span class="section-label">TOP STORY</span>
+    <span class="section-title">本日の主要ニュース</span>
+  </div>
+
+  <div class="main-news">
+    <div class="news-time">12:02 ／ 国内株概況</div>
+    <div class="news-title">東証前引け 日経平均は続伸 一時1300円高 ― 米オラクル好決算でハイテクに買い</div>
+    <div class="news-body">
+      11日午前の東京株式市場で日経平均株価は続伸し、前場終値は前日比+1,139円（+2.10%）の55,387円。上げ幅は一時1,300円を超え、6日以来3営業日ぶりに55,000円台を回復。前日好決算を発表した米オラクルの時間外株高を受け、ソフトバンクグループをはじめとするAI・ハイテク関連株に大規模な買いが入った。個人投資家も押し目買いで積極参戦。
+    </div>
+  </div>
+
+  <div class="main-news" style="border-left-color: var(--blue);">
+    <div class="news-time">11:55</div>
+    <div class="news-title">日経平均一時1300円高、有事でも個人の買い旺盛 ― ソフトバンクG急騰</div>
+    <div class="news-body">
+      ホルムズ海峡を巡る地政学的リスクが残存する中でも、個人投資家の押し目買い意欲は旺盛。ソフトバンクグループが大幅高をけん引。米オラクルのAIクラウド事業が好調であることが、日本のAI関連株への連想買いを呼んだ。
+    </div>
+  </div>
+</div>
+
+<!-- 騰落ランキング -->
+<div class="section">
+  <div class="section-head">
+    <span class="section-label">RANKING / 前場</span>
+    <span class="section-title">値上がり・値下がり率（プライム）</span>
+  </div>
+  <div class="rank-grid">
+    <div class="rank-box">
+      <div class="rank-head rise">▲ 値上がり率上位</div>
+      <div class="rank-row">
+        <span class="rank-no">1</span>
+        <span class="rank-name">Jディスプレイ（6740）</span>
+        <span class="rank-pct pos">+23.17%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">2</span>
+        <span class="rank-name">レゾナック HD（4004）</span>
+        <span class="rank-pct pos">+12.13%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">3</span>
+        <span class="rank-name">コーエーテクモ HD（3635）</span>
+        <span class="rank-pct pos">+10.67%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">4</span>
+        <span class="rank-name">カナモト（9678）</span>
+        <span class="rank-pct pos">+10.39%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">5</span>
+        <span class="rank-name">任天堂（7974）</span>
+        <span class="rank-pct pos">+9.92%</span>
+      </div>
+    </div>
+    <div class="rank-box">
+      <div class="rank-head drop">▼ 値下がり率上位</div>
+      <div class="rank-row">
+        <span class="rank-no">1</span>
+        <span class="rank-name">MonotaRO（3064）</span>
+        <span class="rank-pct neg">−7.53%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">2</span>
+        <span class="rank-name">ライフドリンク（2585）</span>
+        <span class="rank-pct neg">−6.46%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">3</span>
+        <span class="rank-name">ネットプロテクションズ（7383）</span>
+        <span class="rank-pct neg">−3.30%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">4</span>
+        <span class="rank-name">NEC（6701）</span>
+        <span class="rank-pct neg">−3.29%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-no">5</span>
+        <span class="rank-name">Appier Group（4180）</span>
+        <span class="rank-pct neg">−3.25%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 注目銘柄トピック -->
+<div class="section">
+  <div class="section-head">
+    <span class="section-label">WATCH</span>
+    <span class="section-title">個別銘柄トピック</span>
+  </div>
+  <div class="watch-grid">
+
+    <div class="watch-card">
+      <div class="wc-code">9984 / ソフトバンクグループ</div>
+      <div class="wc-name">大幅続伸</div>
+      <div class="wc-body">米オラクルの決算後株高が波及。AI投資テーマの中心として個人・機関双方から買い集中。前場を通じて高値圏を維持。</div>
+      <span class="wc-tag" style="color:var(--pos);border-color:rgba(26,158,96,0.3);background:rgba(26,158,96,0.06)">AI・ハイテク</span>
+    </div>
+
+    <div class="watch-card">
+      <div class="wc-code">9101 / 日本郵船</div>
+      <div class="wc-name">株価が最高値更新</div>
+      <div class="wc-body">ホルムズ海峡を巡る報道が相次ぎ、海上輸送コスト上昇の思惑から買いが集中。地政学リスクを材料にした思惑買い継続。</div>
+      <span class="wc-tag" style="color:var(--blue);border-color:rgba(26,111,212,0.3);background:rgba(26,111,212,0.06)">地政学・海運</span>
+    </div>
+
+    <div class="watch-card">
+      <div class="wc-code">5016 / JX金属</div>
+      <div class="wc-name">株価続伸</div>
+      <div class="wc-body">半導体材料に230億円投資し収益構造を転換する方針を発表。素材・非鉄セクターの中で独自の成長テーマを持つとして評価が上昇。</div>
+      <span class="wc-tag" style="color:var(--accent);border-color:rgba(184,146,42,0.3);background:rgba(184,146,42,0.06)">半導体・素材</span>
+    </div>
+
+    <div class="watch-card">
+      <div class="wc-code">9678 / カナモト</div>
+      <div class="wc-name">11年半ぶり高値</div>
+      <div class="wc-body">首都圏・北海道の建機レンタル需要が好調で2ケタ増益を達成。インフラ・建設テーマの中でバリュー株として再評価。</div>
+      <span class="wc-tag" style="color:var(--accent);border-color:rgba(184,146,42,0.3);background:rgba(184,146,42,0.06)">建設・内需</span>
+    </div>
+
+    <div class="watch-card">
+      <div class="wc-code">1605 / INPEX</div>
+      <div class="wc-name">もみ合い継続</div>
+      <div class="wc-body">原油相場が$119→$76に急落した後も、ホルムズ海峡問題が先行き不透明感を醸成。方向感を欠く展開が続く。</div>
+      <span class="wc-tag" style="color:var(--neg);border-color:rgba(201,48,48,0.3);background:rgba(201,48,48,0.06)">原油・エネルギー</span>
+    </div>
+
+    <div class="watch-card">
+      <div class="wc-code">3064 / MonotaRO</div>
+      <div class="wc-name">値下がり率1位 −7.53%</div>
+      <div class="wc-body">Anthropicショック（AI・SaaS代替懸念）の連想売りが継続。BtoB EC・SaaS系への売り圧力が最も強い銘柄のひとつ。</div>
+      <span class="wc-tag" style="color:var(--neg);border-color:rgba(201,48,48,0.3);background:rgba(201,48,48,0.06)">AnthropicShock</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- 構造的テーマ -->
+<div class="section">
+  <div class="section-head">
+    <span class="section-label">THEMES</span>
+    <span class="section-title">本日のマーケット構造テーマ</span>
+  </div>
+  <div class="news-list">
+    <div class="news-item" style="animation-delay:0.05s">
+      <div class="ni-time">テーマ①</div>
+      <div>
+        <div class="ni-title">オラクル好決算 → AI株全面高</div>
+        <div class="news-body" style="font-size:12px;margin-top:6px">米オラクルがクラウド・AI事業の好決算を発表。時間外で急騰し、翌朝の東京市場でSBG・AI関連に連鎖高。「遠くのAI好決算は日本ハイテクの買い」という動きが鮮明。</div>
+        <span class="ni-tag" style="color:var(--pos);border-color:rgba(26,158,96,0.3);background:rgba(26,158,96,0.06)">AI・ハイテク上昇</span>
+      </div>
+    </div>
+    <div class="news-item" style="animation-delay:0.1s">
+      <div class="ni-time">テーマ②</div>
+      <div>
+        <div class="ni-title">Anthropicショック継続 ― SaaS・SIer売り</div>
+        <div class="news-body" style="font-size:12px;margin-top:6px">AI全体が買われる中でも、「AIに代替されるSaaS・SIer」への売りは継続。NEC（−3.29%）・MonotaRO（−7.53%）・Appier（−3.25%）が前場の値下がり上位に集中。市場はAI「勝者・敗者」を峻別しはじめている。</div>
+        <span class="ni-tag" style="color:var(--neg);border-color:rgba(201,48,48,0.3);background:rgba(201,48,48,0.06)">SIer・SaaS売り</span>
+      </div>
+    </div>
+    <div class="news-item" style="animation-delay:0.15s">
+      <div class="ni-time">テーマ③</div>
+      <div>
+        <div class="ni-title">地政学リスク残存 ― ホルムズ・海運思惑</div>
+        <div class="news-body" style="font-size:12px;margin-top:6px">トランプ「戦争ほぼ終了」発言で原油は急落したが、ホルムズ海峡の機雷問題は未解決。日本郵船が最高値を更新するなど「停戦≠リスク消滅」という読みで海運株は底堅い。</div>
+        <span class="ni-tag" style="color:var(--blue);border-color:rgba(26,111,212,0.3);background:rgba(26,111,212,0.06)">地政学・海運</span>
+      </div>
+    </div>
+    <div class="news-item" style="animation-delay:0.2s">
+      <div class="ni-time">テーマ④</div>
+      <div>
+        <div class="ni-title">バリューローテーション継続 ― 製造・建設・素材</div>
+        <div class="news-body" style="font-size:12px;margin-top:6px">カナモト（+10.4%）・JX金属・レゾナック（+12.1%）など製造・素材・インフラ系が上位を占める。AI全体高でグロースも戻る局面でも、バリュー優位のローテーションは崩れていない。</div>
+        <span class="ni-tag" style="color:var(--accent);border-color:rgba(184,146,42,0.3);background:rgba(184,146,42,0.06)">バリューローテーション</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 本日のまとめ -->
+<div class="summary-box">
+  <div class="summary-title">MARKET SUMMARY — 前場引け時点</div>
+  <div class="summary-body">
+    米オラクル好決算がトリガーとなり、日経平均は前場で+1,139円（+2.10%）の大幅続伸。55,000円台を3営業日ぶりに回復した。<br><br>
+    ただし市場の内部構造は二極化している。AI・ハイテク（SBG・任天堂・ゲーム）が強く買われる一方、Anthropicショックの連想売りはNEC・MonotaROなどSaaS・SIer系に集中して継続。「AIが勝者を生み出す」という買いと「AIが敗者を生み出す」という売りが同時進行している。<br><br>
+    地政学面では原油急落後も日本郵船が最高値を更新するなど、ホルムズ海峡問題の先行き不透明感から海運・防衛テーマが底堅い。後場はオラクル余波の持続力と、NEC・富士通など保有銘柄の下げ止まりを確認したい局面。
+  </div>
+</div>
+
+<footer>
+  <span>PERSONAL RESEARCH — NOT INVESTMENT ADVICE</span>
+  <span>SOURCE: 日本経済新聞 markets/stocks ／ 2026-03-11 前場引け</span>
+</footer>
+
+</div>
+</body>
+</html>
