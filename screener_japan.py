@@ -57,6 +57,15 @@ TAG_MAP = {
     "trading-value":          ("売買代金上位",  1),
 }
 
+TAG_MAP_DROP = {
+    "price-drop":             ("値下がり",     3),
+    "spike-in-trading-value": ("出来高急増",   3),
+    "pbr-low":                ("低PBR",        2),
+    "per-low":                ("低PER",        2),
+    "year-low":               ("年初来安値",    2),
+    "trading-value":          ("売買代金上位",  1),
+}
+
 # ══════════════════════════════════════════════
 # 1. 日経ランキング取得
 # ══════════════════════════════════════════════
@@ -79,6 +88,19 @@ def fetch_nikkei_ranking():
 def build_scores(ranking):
     scores = defaultdict(lambda: {"name": "", "score": 0, "tags": [], "values": {}})
     for cat, (tag_label, weight) in TAG_MAP.items():
+        if cat not in ranking:
+            continue
+        for item in ranking[cat]["data"]:
+            code = item["stockCode"]
+            scores[code]["name"]   = item["stockName"]
+            scores[code]["score"] += weight
+            scores[code]["tags"].append(tag_label)
+            scores[code]["values"][cat] = item["stockValues"]
+    return sorted(scores.items(), key=lambda x: x[1]["score"], reverse=True)
+
+def build_scores_drop(ranking):
+    scores = defaultdict(lambda: {"name": "", "score": 0, "tags": [], "values": {}})
+    for cat, (tag_label, weight) in TAG_MAP_DROP.items():
         if cat not in ranking:
             continue
         for item in ranking[cat]["data"]:
@@ -288,12 +310,82 @@ def build_history_summary(history, today_str):
         items += f'<span class="repeat-chip" style="border-color:{dot_color}30;"><span class="repeat-dot" style="background:{dot_color}"></span>{code} <span class="repeat-count">{v["count"]}回</span></span>'
     return items
 
-def generate_html(filtered, history, today_str, source_dt):
+def build_legend_items_drop():
+    items = ""
+    weights_drop = {
+        "値下がり":     ("当日値下がり率ランキング上位",  "+3pt"),
+        "出来高急増":   ("売買代金急増率ランキング上位",  "+3pt"),
+        "低PBR":        ("PBR低位（解散価値割れ圏）",     "+2pt"),
+        "低PER":        ("PER低位（割安益回り）",          "+2pt"),
+        "年初来安値":   ("年初来安値更新銘柄",             "+2pt"),
+        "売買代金上位": ("当日売買代金ランキング上位",     "+1pt"),
+    }
+    TAG_COLORS_DROP = {
+        "値下がり":     ("#c93030", "#fff0ee"),
+        "出来高急増":   ("#b8360a", "#fff0ea"),
+        "低PBR":        ("#1a6fd4", "#eef4ff"),
+        "低PER":        ("#1a55a8", "#e8f0ff"),
+        "年初来安値":   ("#7a3a9e", "#f5eeff"),
+        "売買代金上位": ("#7a5c1a", "#fdf6e3"),
+    }
+    for tag, (desc, pt) in weights_drop.items():
+        c, bg = TAG_COLORS_DROP.get(tag, ("#555", "#eee"))
+        items += f"""
+    <div class="legend-item">
+      <span class="tag" style="color:{c};background:{bg};border-color:{c}30">{tag}</span>
+      <span>{pt}：{desc}</span>
+    </div>"""
+    return items
+
+def tag_html_drop(tags):
+    TAG_COLORS_DROP = {
+        "値下がり":     ("#c93030", "#fff0ee"),
+        "出来高急増":   ("#b8360a", "#fff0ea"),
+        "低PBR":        ("#1a6fd4", "#eef4ff"),
+        "低PER":        ("#1a55a8", "#e8f0ff"),
+        "年初来安値":   ("#7a3a9e", "#f5eeff"),
+        "売買代金上位": ("#7a5c1a", "#fdf6e3"),
+    }
+    parts = []
+    for t in tags:
+        c, bg = TAG_COLORS_DROP.get(t, ("#555", "#eee"))
+        parts.append(f'<span class="tag" style="color:{c};background:{bg};border-color:{c}30">{t}</span>')
+    return "".join(parts)
+
+def build_rows_drop(filtered):
+    rows = ""
+    for i, r in enumerate(filtered):
+        rows += f"""
+    <tr class="stock-row">
+      <td class="rank-cell">#{i+1}</td>
+      <td class="code-cell">
+        <div class="stock-code">{r['code']}</div>
+        <div class="stock-name">{r['name']}</div>
+      </td>
+      <td class="score-cell">{score_bars(r['score'])}</td>
+      <td class="ap-cell">{appearance_badge(r['appearances'])}</td>
+      <td class="tags-cell">{tag_html_drop(r['tags'])}</td>
+      <td class="num-cell">{fmt(r['price'], '¥{{:,.0f}}')}</td>
+      <td class="num-cell">{fmt_signed(r['change_pct'])}</td>
+      <td class="num-cell">{fmt_mc(r['market_cap_b'])}</td>
+      <td class="num-cell">{fmt(r['pbr'],  '{{:.2f}}x')}</td>
+      <td class="num-cell">{fmt(r['per'],  '{{:.1f}}x')}</td>
+      <td class="num-cell">{fmt(r['div_yield'], '{{:.2f}}%')}</td>
+      <td class="num-cell">{fmt_signed(r['week52_ratio'], decimals=1)}</td>
+    </tr>"""
+    return rows
+
+def generate_html(filtered, filtered_drop, history, today_str, source_dt):  # noqa: E501
     dt_str  = datetime.now().strftime("%Y-%m-%d %H:%M")
     top     = filtered[0] if filtered else {}
+    top_drop = filtered_drop[0] if filtered_drop else {}
     hot     = sum(1 for r in filtered if r["appearances"] >= 3)
+    len_rise = len(filtered)
+    len_drop = len(filtered_drop)
     rows    = build_rows(filtered)
+    rows_drop = build_rows_drop(filtered_drop)
     legend  = build_legend_items()
+    legend_drop = build_legend_items_drop()
     hist_summary = build_history_summary(history, today_str)
 
     return f"""<!DOCTYPE html>
@@ -386,6 +478,18 @@ td {{ padding:12px 12px; vertical-align:middle; }}
 .legend-title {{ font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:12px; }}
 .legend-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }}
 .legend-item {{ font-size:11px; color:var(--text-mid); display:flex; gap:8px; align-items:flex-start; }}
+.tab-bar {{ display:flex; gap:0; margin-bottom:0; border-bottom:2px solid var(--border); }}
+.tab-btn {{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.15em;
+  padding:10px 24px; border:none; background:transparent; cursor:pointer;
+  color:var(--text-dim); border-bottom:3px solid transparent; margin-bottom:-2px;
+  transition:color 0.15s, border-color 0.15s;
+}}
+.tab-btn:hover {{ color:var(--text); }}
+.tab-btn.active-rise {{ color:var(--pos); border-bottom-color:var(--pos); font-weight:600; }}
+.tab-btn.active-drop {{ color:var(--neg); border-bottom-color:var(--neg); font-weight:600; }}
+.tab-panel {{ display:none; padding-top:16px; }}
+.tab-panel.show {{ display:block; }}
 footer {{ margin-top:32px; padding-top:14px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:var(--text-dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }}
 @keyframes fadeSlide {{ from{{opacity:0;transform:translateY(10px)}} to{{opacity:1;transform:translateY(0)}} }}
 @media(max-width:768px) {{ .summary{{grid-template-columns:1fr 1fr;}} .legend-grid{{grid-template-columns:1fr 1fr;}} }}
@@ -439,6 +543,12 @@ footer {{ margin-top:32px; padding-top:14px; border-top:1px solid var(--border);
   {hist_summary}
 </div>
 
+<div class="tab-bar">
+  <button class="tab-btn active-rise" onclick="switchTab('rise',this)">▲ 値上がりランキング（{len_rise}銘柄）</button>
+  <button class="tab-btn" onclick="switchTab('drop',this)">▼ 値下がりランキング（{len_drop}銘柄）</button>
+</div>
+
+<div id="tab-rise" class="tab-panel show">
 <div class="table-wrap">
 <table>
   <thead>
@@ -451,7 +561,6 @@ footer {{ margin-top:32px; padding-top:14px; border-top:1px solid var(--border);
   <tbody>{rows}</tbody>
 </table>
 </div>
-
 <div class="legend">
   <div class="legend-title">SCORING LOGIC ／ 連続出現バッジ凡例</div>
   <div class="legend-grid">
@@ -461,6 +570,40 @@ footer {{ margin-top:32px; padding-top:14px; border-top:1px solid var(--border);
     <div class="legend-item"><span class="ap ap-hot">🔴 N日</span> 直近{HISTORY_WINDOW}日間で3回以上出現（継続シグナル）</div>
   </div>
 </div>
+</div>
+
+<div id="tab-drop" class="tab-panel">
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th></th><th>コード / 銘柄</th><th>スコア</th><th>連続出現</th><th>該当タグ</th>
+      <th class="r">株価</th><th class="r">騰落率</th><th class="r">時価総額</th>
+      <th class="r">PBR</th><th class="r">PER</th><th class="r">配当利回り</th><th class="r">52週高値比</th>
+    </tr>
+  </thead>
+  <tbody>{rows_drop}</tbody>
+</table>
+</div>
+<div class="legend">
+  <div class="legend-title">DROP SCORING LOGIC</div>
+  <div class="legend-grid">
+    {legend_drop}
+    <div class="legend-item"><span class="ap ap-new">NEW</span> 初登場（過去{HISTORY_WINDOW}日に出現なし）</div>
+    <div class="legend-item"><span class="ap ap-watch">N日</span> 直近{HISTORY_WINDOW}日間で1〜2回出現</div>
+    <div class="legend-item"><span class="ap ap-hot">🔴 N日</span> 直近{HISTORY_WINDOW}日間で3回以上出現</div>
+  </div>
+</div>
+</div>
+
+<script>
+function switchTab(tab, btn) {{
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn');
+  document.getElementById('tab-' + tab).classList.add('show');
+  btn.classList.add(tab === 'rise' ? 'active-rise' : 'active-drop');
+}}
+</script>
 
 <footer>
   <span>PERSONAL RESEARCH TOOL — NOT INVESTMENT ADVICE</span>
@@ -491,12 +634,17 @@ if __name__ == "__main__":
     print(f"yfinance補完中（{len(candidates)}銘柄）...")
     filtered = enrich_with_yfinance(candidates, history, today_str)
 
+    print("値下がりスコアリング中...")
+    candidates_drop = build_scores_drop(ranking)
+    print(f"yfinance補完中（値下がり {len(candidates_drop)}銘柄）...")
+    filtered_drop = enrich_with_yfinance(candidates_drop, history, today_str)
+
     print("履歴を保存中...")
     all_codes = [code for code, _ in candidates]
     history   = save_history(history, today_str, all_codes)
 
-    print(f"HTML生成中（{len(filtered)}銘柄がフィルター通過）...")
-    html = generate_html(filtered, history, today_str, source_dt)
+    print(f"HTML生成中（上昇{len(filtered)}銘柄 / 下落{len(filtered_drop)}銘柄）...")
+    html = generate_html(filtered, filtered_drop, history, today_str, source_dt)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(html)

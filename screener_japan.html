@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日本株スクリーナー｜2026-03-11 00:45</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --surface:#f8f9fb; --surface2:#f0f2f6;
+  --border:#e2e6ef; --text:#3a4255; --text-dim:#9aa3b8; --text-mid:#6b7592; --text-bright:#111827;
+  --accent:#b8922a; --accent2:#1a6fd4; --pos:#1a9e60; --neg:#c93030;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans JP',sans-serif; font-weight:300; min-height:100vh; }
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:linear-gradient(rgba(26,111,212,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(26,111,212,0.025) 1px,transparent 1px);
+  background-size:48px 48px; pointer-events:none; z-index:0;
+}
+.page { max-width:1280px; margin:0 auto; padding:52px 24px 80px; position:relative; z-index:1; }
+header { margin-bottom:36px; border-left:4px solid var(--accent); padding-left:20px; animation:fadeSlide 0.6s ease both; }
+.h-meta { display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.h-badge { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.2em; padding:3px 10px; border-radius:2px; }
+.b-live { background:rgba(26,158,96,0.1); color:var(--pos); border:1px solid rgba(26,158,96,0.25); }
+.b-src  { background:rgba(184,146,42,0.1); color:var(--accent); border:1px solid rgba(184,146,42,0.25); }
+.b-dt   { background:var(--surface2); color:var(--text-dim); border:1px solid var(--border); }
+h1 { font-family:'Bebas Neue',sans-serif; font-size:clamp(36px,6vw,64px); letter-spacing:0.04em; color:var(--text-bright); line-height:0.95; margin-bottom:10px; }
+h1 span { color:var(--accent); }
+.h-sub { font-size:12px; color:var(--text-mid); line-height:1.8; }
+.summary { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:28px; }
+.s-card { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:16px; position:relative; overflow:hidden; }
+.s-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:3px 3px 0 0; }
+.s-card.c1::before { background:var(--neg); }
+.s-card.c2::before { background:var(--accent); }
+.s-card.c3::before { background:var(--accent2); }
+.s-card.c4::before { background:var(--pos); }
+.s-card.c5::before { background:#7a5c1a; }
+.s-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.18em; color:var(--text-dim); margin-bottom:8px; }
+.s-val   { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--text-bright); }
+.s-desc  { font-size:11px; color:var(--text-mid); margin-top:5px; line-height:1.5; }
+
+/* 連続出現サマリー */
+.history-box { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:16px 20px; margin-bottom:28px; }
+.history-title { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:12px; }
+.repeat-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px;
+  padding:4px 10px; border-radius:2px; border:1px solid;
+  margin:3px 5px 3px 0; background:var(--bg);
+  color:var(--text-bright);
+}
+.repeat-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.repeat-count { font-size:10px; color:var(--text-dim); }
+.no-repeat { font-size:12px; color:var(--text-dim); }
+
+/* テーブル */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead tr { background:var(--surface2); }
+th { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.15em; color:var(--text-dim); padding:10px 12px; text-align:left; white-space:nowrap; border-bottom:2px solid var(--border); }
+th.r { text-align:right; }
+.stock-row { border-bottom:1px solid var(--border); transition:background 0.15s; }
+.stock-row:hover { background:var(--surface); }
+td { padding:12px 12px; vertical-align:middle; }
+.rank-cell { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim); white-space:nowrap; }
+.code-cell { white-space:nowrap; min-width:90px; }
+.stock-code { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:var(--text-bright); }
+.stock-name { font-size:11px; color:var(--text-mid); margin-top:2px; }
+.score-cell { white-space:nowrap; min-width:120px; }
+.score-bars { font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--accent); letter-spacing:1px; }
+.score-num  { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-dim); margin-left:4px; }
+.ap-cell { white-space:nowrap; }
+.ap {
+  font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.1em;
+  padding:3px 8px; border-radius:2px; white-space:nowrap;
+}
+.ap-new   { background:rgba(26,111,212,0.08); color:var(--accent2); border:1px solid rgba(26,111,212,0.2); }
+.ap-watch { background:rgba(184,146,42,0.08); color:var(--accent); border:1px solid rgba(184,146,42,0.25); }
+.ap-hot   { background:rgba(201,48,48,0.08); color:var(--neg); border:1px solid rgba(201,48,48,0.2); font-weight:500; }
+.tags-cell { min-width:150px; }
+.tag { display:inline-block; font-size:10px; font-weight:500; padding:2px 7px; border-radius:2px; border:1px solid; margin:2px 3px 2px 0; white-space:nowrap; }
+.num-cell { text-align:right; white-space:nowrap; font-family:'IBM Plex Mono',monospace; font-size:13px; }
+.na { color:var(--text-dim); }
+.pos { color:var(--pos); }
+.neg { color:var(--neg); }
+.legend { margin-top:24px; background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:16px 20px; }
+.legend-title { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:12px; }
+.legend-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.legend-item { font-size:11px; color:var(--text-mid); display:flex; gap:8px; align-items:flex-start; }
+.tab-bar { display:flex; gap:0; margin-bottom:0; border-bottom:2px solid var(--border); }
+.tab-btn {
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.15em;
+  padding:10px 24px; border:none; background:transparent; cursor:pointer;
+  color:var(--text-dim); border-bottom:3px solid transparent; margin-bottom:-2px;
+  transition:color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active-rise { color:var(--pos); border-bottom-color:var(--pos); font-weight:600; }
+.tab-btn.active-drop { color:var(--neg); border-bottom-color:var(--neg); font-weight:600; }
+.tab-panel { display:none; padding-top:16px; }
+.tab-panel.show { display:block; }
+footer { margin-top:32px; padding-top:14px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:var(--text-dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@media(max-width:768px) { .summary{grid-template-columns:1fr 1fr;} .legend-grid{grid-template-columns:1fr 1fr;} }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div class="h-meta">
+    <span class="h-badge b-live">● LIVE DATA</span>
+    <span class="h-badge b-src">SOURCE: 日経電子版 + yfinance</span>
+    <span class="h-badge b-dt">生成: 2026-03-11 00:45</span>
+  </div>
+  <h1>日本株<span>スクリーナー</span></h1>
+  <p class="h-sub">
+    日経ランキング（値上がり率 × 出来高急増 × 低PBR/PER × 年初来高値）を複合スコアリング。時価総額500億円以上フィルター。<br>
+    データソース更新: 2026-03-11 09:45:09 ／ 連続出現ウィンドウ: 直近5営業日
+  </p>
+</header>
+
+<div class="summary">
+  <div class="s-card c1">
+    <div class="s-label">TOTAL HITS</div>
+    <div class="s-val">23</div>
+    <div class="s-desc">スクリーニング通過銘柄数</div>
+  </div>
+  <div class="s-card c2">
+    <div class="s-label">TOP SCORE</div>
+    <div class="s-val">6pt</div>
+    <div class="s-desc">Ｊディスプレ (6740)</div>
+  </div>
+  <div class="s-card c3">
+    <div class="s-label">SCREENING AXES</div>
+    <div class="s-val">6</div>
+    <div class="s-desc">値上がり・出来高・PBR・PER・高値・売買代金</div>
+  </div>
+  <div class="s-card c4">
+    <div class="s-label">🔴 HOT（3日以上）</div>
+    <div class="s-val">0</div>
+    <div class="s-desc">直近5日間で3回以上出現</div>
+  </div>
+  <div class="s-card c5">
+    <div class="s-label">HISTORY DAYS</div>
+    <div class="s-val">2</div>
+    <div class="s-desc">蓄積済み営業日数</div>
+  </div>
+</div>
+
+<div class="history-box">
+  <div class="history-title">REPEAT WATCH — 直近5日間で複数回出現した銘柄</div>
+  <span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>5932 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>6619 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>7201 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>3863 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>5408 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>2501 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>6390 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>7205 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>5351 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>9505 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>1878 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>9513 <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>285A <span class="repeat-count">2回</span></span><span class="repeat-chip" style="border-color:#b8922a30;"><span class="repeat-dot" style="background:#b8922a"></span>6857 <span class="repeat-count">2回</span></span>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active-rise" onclick="switchTab('rise',this)">▲ 値上がりランキング（23銘柄）</button>
+  <button class="tab-btn" onclick="switchTab('drop',this)">▼ 値下がりランキング（19銘柄）</button>
+</div>
+
+<div id="tab-rise" class="tab-panel show">
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th></th><th>コード / 銘柄</th><th>スコア</th><th>連続出現</th><th>該当タグ</th>
+      <th class="r">株価</th><th class="r">騰落率</th><th class="r">時価総額</th>
+      <th class="r">PBR</th><th class="r">PER</th><th class="r">配当利回り</th><th class="r">52週高値比</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="stock-row">
+      <td class="rank-cell">#1</td>
+      <td class="code-cell">
+        <div class="stock-code">6740</div>
+        <div class="stock-name">Ｊディスプレ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▮▮▮</span> <span class="score-num">6pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#d4480a;background:#fff3ee;border-color:#d4480a30">値上がり</span><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥108</td>
+      <td class="num-cell"><span class="pos">+31.71%</span></td>
+      <td class="num-cell">4,191億</td>
+      <td class="num-cell">-110.77x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-3.6%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#2</td>
+      <td class="code-cell">
+        <div class="stock-code">9984</div>
+        <div class="stock-name">ＳＢＧ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▮▯▯</span> <span class="score-num">4pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#d4480a;background:#fff3ee;border-color:#d4480a30">値上がり</span><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥3,960</td>
+      <td class="num-cell"><span class="pos">+8.73%</span></td>
+      <td class="num-cell">22.6兆</td>
+      <td class="num-cell">1.46x</td>
+      <td class="num-cell">7.4x</td>
+      <td class="num-cell">30.00%</td>
+      <td class="num-cell"><span class="neg">-42.8%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#3</td>
+      <td class="code-cell">
+        <div class="stock-code">4004</div>
+        <div class="stock-name">レゾナック</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#d4480a;background:#fff3ee;border-color:#d4480a30">値上がり</span></td>
+      <td class="num-cell">¥11,915</td>
+      <td class="num-cell"><span class="pos">+10.19%</span></td>
+      <td class="num-cell">2.2兆</td>
+      <td class="num-cell">3.08x</td>
+      <td class="num-cell">74.0x</td>
+      <td class="num-cell">60.00%</td>
+      <td class="num-cell"><span class="neg">-14.7%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#4</td>
+      <td class="code-cell">
+        <div class="stock-code">9678</div>
+        <div class="stock-name">カナモト</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#d4480a;background:#fff3ee;border-color:#d4480a30">値上がり</span></td>
+      <td class="num-cell">¥4,350</td>
+      <td class="num-cell"><span class="pos">+8.89%</span></td>
+      <td class="num-cell">1,506億</td>
+      <td class="num-cell">1.03x</td>
+      <td class="num-cell">13.9x</td>
+      <td class="num-cell">250.00%</td>
+      <td class="num-cell"><span class="neg">-0.9%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#5</td>
+      <td class="code-cell">
+        <div class="stock-code">6324</div>
+        <div class="stock-name">ハーモニック</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#d4480a;background:#fff3ee;border-color:#d4480a30">値上がり</span></td>
+      <td class="num-cell">¥4,355</td>
+      <td class="num-cell"><span class="pos">+8.50%</span></td>
+      <td class="num-cell">4,123億</td>
+      <td class="num-cell">5.31x</td>
+      <td class="num-cell">89.2x</td>
+      <td class="num-cell">50.00%</td>
+      <td class="num-cell"><span class="neg">-11.8%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#6</td>
+      <td class="code-cell">
+        <div class="stock-code">2288</div>
+        <div class="stock-name">丸大食</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥2,221</td>
+      <td class="num-cell"><span class="pos">+0.27%</span></td>
+      <td class="num-cell">544億</td>
+      <td class="num-cell">0.73x</td>
+      <td class="num-cell">12.3x</td>
+      <td class="num-cell">293.00%</td>
+      <td class="num-cell"><span class="neg">-9.4%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#7</td>
+      <td class="code-cell">
+        <div class="stock-code">2664</div>
+        <div class="stock-name">カワチ薬品</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥3,140</td>
+      <td class="num-cell"><span class="pos">+0.96%</span></td>
+      <td class="num-cell">701億</td>
+      <td class="num-cell">0.60x</td>
+      <td class="num-cell">15.2x</td>
+      <td class="num-cell">257.00%</td>
+      <td class="num-cell"><span class="neg">-6.5%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#8</td>
+      <td class="code-cell">
+        <div class="stock-code">6282</div>
+        <div class="stock-name">オイレス</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥2,463</td>
+      <td class="num-cell"><span class="pos">+1.03%</span></td>
+      <td class="num-cell">717億</td>
+      <td class="num-cell">0.92x</td>
+      <td class="num-cell">12.5x</td>
+      <td class="num-cell">349.00%</td>
+      <td class="num-cell"><span class="neg">-8.6%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#9</td>
+      <td class="code-cell">
+        <div class="stock-code">7201</div>
+        <div class="stock-name">日産自</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a6fd4;background:#eef4ff;border-color:#1a6fd430">低PBR</span></td>
+      <td class="num-cell">¥384</td>
+      <td class="num-cell"><span class="pos">+0.71%</span></td>
+      <td class="num-cell">1.3兆</td>
+      <td class="num-cell">0.27x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-17.7%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#10</td>
+      <td class="code-cell">
+        <div class="stock-code">3863</div>
+        <div class="stock-name">日本紙</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a6fd4;background:#eef4ff;border-color:#1a6fd430">低PBR</span></td>
+      <td class="num-cell">¥1,302</td>
+      <td class="num-cell"><span class="pos">+2.20%</span></td>
+      <td class="num-cell">1,504億</td>
+      <td class="num-cell">0.31x</td>
+      <td class="num-cell">8.5x</td>
+      <td class="num-cell">118.00%</td>
+      <td class="num-cell"><span class="neg">-3.3%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#11</td>
+      <td class="code-cell">
+        <div class="stock-code">2501</div>
+        <div class="stock-name">サッポロＨＤ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥1,700</td>
+      <td class="num-cell"><span class="pos">+1.10%</span></td>
+      <td class="num-cell">6,627億</td>
+      <td class="num-cell">3.03x</td>
+      <td class="num-cell">2.2x</td>
+      <td class="num-cell">773.00%</td>
+      <td class="num-cell"><span class="neg">-10.9%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#12</td>
+      <td class="code-cell">
+        <div class="stock-code">7205</div>
+        <div class="stock-name">日野自</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥416</td>
+      <td class="num-cell"><span class="pos">+1.21%</span></td>
+      <td class="num-cell">2,388億</td>
+      <td class="num-cell">1.11x</td>
+      <td class="num-cell">3.1x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-15.9%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#13</td>
+      <td class="code-cell">
+        <div class="stock-code">5351</div>
+        <div class="stock-name">品川リフラ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥2,299</td>
+      <td class="num-cell"><span class="pos">+1.95%</span></td>
+      <td class="num-cell">1,049億</td>
+      <td class="num-cell">0.88x</td>
+      <td class="num-cell">3.3x</td>
+      <td class="num-cell">399.00%</td>
+      <td class="num-cell"><span class="neg">-8.3%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#14</td>
+      <td class="code-cell">
+        <div class="stock-code">9505</div>
+        <div class="stock-name">北陸電</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥1,048</td>
+      <td class="num-cell"><span class="pos">+3.30%</span></td>
+      <td class="num-cell">2,189億</td>
+      <td class="num-cell">0.49x</td>
+      <td class="num-cell">3.5x</td>
+      <td class="num-cell">246.00%</td>
+      <td class="num-cell"><span class="neg">-8.2%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#15</td>
+      <td class="code-cell">
+        <div class="stock-code">9101</div>
+        <div class="stock-name">郵船</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a9e60;background:#edfaf3;border-color:#1a9e6030">年初来高値</span></td>
+      <td class="num-cell">¥5,766</td>
+      <td class="num-cell"><span class="pos">+3.11%</span></td>
+      <td class="num-cell">2.4兆</td>
+      <td class="num-cell">0.82x</td>
+      <td class="num-cell">8.0x</td>
+      <td class="num-cell">358.00%</td>
+      <td class="num-cell"><span class="neg">-0.1%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#16</td>
+      <td class="code-cell">
+        <div class="stock-code">9104</div>
+        <div class="stock-name">商船三井</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a9e60;background:#edfaf3;border-color:#1a9e6030">年初来高値</span></td>
+      <td class="num-cell">¥6,204</td>
+      <td class="num-cell"><span class="pos">+3.42%</span></td>
+      <td class="num-cell">2.1兆</td>
+      <td class="num-cell">0.79x</td>
+      <td class="num-cell">7.4x</td>
+      <td class="num-cell">333.00%</td>
+      <td class="num-cell"><span class="neg">-0.1%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#17</td>
+      <td class="code-cell">
+        <div class="stock-code">9107</div>
+        <div class="stock-name">川崎汽</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a9e60;background:#edfaf3;border-color:#1a9e6030">年初来高値</span></td>
+      <td class="num-cell">¥2,726</td>
+      <td class="num-cell"><span class="pos">+4.33%</span></td>
+      <td class="num-cell">1.7兆</td>
+      <td class="num-cell">0.99x</td>
+      <td class="num-cell">9.1x</td>
+      <td class="num-cell">459.00%</td>
+      <td class="num-cell"><span class="pos">+-0.0%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#18</td>
+      <td class="code-cell">
+        <div class="stock-code">1878</div>
+        <div class="stock-name">大東建</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a9e60;background:#edfaf3;border-color:#1a9e6030">年初来高値</span></td>
+      <td class="num-cell">¥3,772</td>
+      <td class="num-cell"><span class="pos">+1.37%</span></td>
+      <td class="num-cell">1.2兆</td>
+      <td class="num-cell">2.55x</td>
+      <td class="num-cell">13.2x</td>
+      <td class="num-cell">384.00%</td>
+      <td class="num-cell"><span class="neg">-0.3%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#19</td>
+      <td class="code-cell">
+        <div class="stock-code">9513</div>
+        <div class="stock-name">Ｊパワー</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a9e60;background:#edfaf3;border-color:#1a9e6030">年初来高値</span></td>
+      <td class="num-cell">¥3,944</td>
+      <td class="num-cell"><span class="pos">+3.19%</span></td>
+      <td class="num-cell">6,980億</td>
+      <td class="num-cell">0.51x</td>
+      <td class="num-cell">6.7x</td>
+      <td class="num-cell">262.00%</td>
+      <td class="num-cell"><span class="neg">-0.1%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#20</td>
+      <td class="code-cell">
+        <div class="stock-code">285A</div>
+        <div class="stock-name">キオクシア</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#21</td>
+      <td class="code-cell">
+        <div class="stock-code">7974</div>
+        <div class="stock-name">任天堂</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥9,787</td>
+      <td class="num-cell"><span class="pos">+7.33%</span></td>
+      <td class="num-cell">11.3兆</td>
+      <td class="num-cell">3.83x</td>
+      <td class="num-cell">30.8x</td>
+      <td class="num-cell">198.00%</td>
+      <td class="num-cell"><span class="neg">-33.8%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#22</td>
+      <td class="code-cell">
+        <div class="stock-code">6920</div>
+        <div class="stock-name">レーザーテク</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥35,670</td>
+      <td class="num-cell"><span class="pos">+2.59%</span></td>
+      <td class="num-cell">3.2兆</td>
+      <td class="num-cell">14.17x</td>
+      <td class="num-cell">38.0x</td>
+      <td class="num-cell">95.00%</td>
+      <td class="num-cell"><span class="neg">-11.5%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#23</td>
+      <td class="code-cell">
+        <div class="stock-code">6857</div>
+        <div class="stock-name">アドテスト</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥24,810</td>
+      <td class="num-cell"><span class="pos">+3.05%</span></td>
+      <td class="num-cell">18.0兆</td>
+      <td class="num-cell">26.72x</td>
+      <td class="num-cell">69.6x</td>
+      <td class="num-cell">20.00%</td>
+      <td class="num-cell"><span class="neg">-15.5%</span></td>
+    </tr></tbody>
+</table>
+</div>
+<div class="legend">
+  <div class="legend-title">SCORING LOGIC ／ 連続出現バッジ凡例</div>
+  <div class="legend-grid">
+    
+    <div class="legend-item">
+      <span class="tag" style="color:#d4480a;background:#fff3ee;border-color:#d4480a30">値上がり</span>
+      <span>+3pt：当日値上がり率ランキング上位</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span>
+      <span>+3pt：売買代金急増率ランキング上位</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#1a6fd4;background:#eef4ff;border-color:#1a6fd430">低PBR</span>
+      <span>+2pt：PBR低位（解散価値割れ圏）</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span>
+      <span>+2pt：PER低位（割安益回り）</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#1a9e60;background:#edfaf3;border-color:#1a9e6030">年初来高値</span>
+      <span>+2pt：年初来高値更新銘柄</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span>
+      <span>+1pt：当日売買代金ランキング上位</span>
+    </div>
+    <div class="legend-item"><span class="ap ap-new">NEW</span> 初登場（過去5日に出現なし）</div>
+    <div class="legend-item"><span class="ap ap-watch">N日</span> 直近5日間で1〜2回出現（注目）</div>
+    <div class="legend-item"><span class="ap ap-hot">🔴 N日</span> 直近5日間で3回以上出現（継続シグナル）</div>
+  </div>
+</div>
+</div>
+
+<div id="tab-drop" class="tab-panel">
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th></th><th>コード / 銘柄</th><th>スコア</th><th>連続出現</th><th>該当タグ</th>
+      <th class="r">株価</th><th class="r">騰落率</th><th class="r">時価総額</th>
+      <th class="r">PBR</th><th class="r">PER</th><th class="r">配当利回り</th><th class="r">52週高値比</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="stock-row">
+      <td class="rank-cell">#1</td>
+      <td class="code-cell">
+        <div class="stock-code">3064</div>
+        <div class="stock-name">モノタロウ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#c93030;background:#fff0ee;border-color:#c9303030">値下がり</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="neg">-6.03%</span></td>
+      <td class="num-cell">9,486億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-39.0%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#2</td>
+      <td class="code-cell">
+        <div class="stock-code">3994</div>
+        <div class="stock-name">マネフォ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#c93030;background:#fff0ee;border-color:#c9303030">値下がり</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="neg">-2.73%</span></td>
+      <td class="num-cell">1,908億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-49.2%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#3</td>
+      <td class="code-cell">
+        <div class="stock-code">4680</div>
+        <div class="stock-name">ラウンドワン</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#c93030;background:#fff0ee;border-color:#c9303030">値下がり</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="neg">-2.65%</span></td>
+      <td class="num-cell">2,421億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-44.4%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#4</td>
+      <td class="code-cell">
+        <div class="stock-code">4180</div>
+        <div class="stock-name">Ａｐｐｉｅｒ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#c93030;background:#fff0ee;border-color:#c9303030">値下がり</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="neg">-2.56%</span></td>
+      <td class="num-cell">854億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-51.9%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#5</td>
+      <td class="code-cell">
+        <div class="stock-code">2288</div>
+        <div class="stock-name">丸大食</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+0.27%</span></td>
+      <td class="num-cell">544億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-9.4%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#6</td>
+      <td class="code-cell">
+        <div class="stock-code">6740</div>
+        <div class="stock-name">Ｊディスプレ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+32.93%</span></td>
+      <td class="num-cell">4,230億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-2.7%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#7</td>
+      <td class="code-cell">
+        <div class="stock-code">2664</div>
+        <div class="stock-name">カワチ薬品</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+0.96%</span></td>
+      <td class="num-cell">701億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-6.5%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#8</td>
+      <td class="code-cell">
+        <div class="stock-code">6282</div>
+        <div class="stock-name">オイレス</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▮▯▯▯</span> <span class="score-num">3pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+1.03%</span></td>
+      <td class="num-cell">717億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-8.6%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#9</td>
+      <td class="code-cell">
+        <div class="stock-code">7201</div>
+        <div class="stock-name">日産自</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a6fd4;background:#eef4ff;border-color:#1a6fd430">低PBR</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+0.71%</span></td>
+      <td class="num-cell">1.3兆</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-17.7%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#10</td>
+      <td class="code-cell">
+        <div class="stock-code">3863</div>
+        <div class="stock-name">日本紙</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a6fd4;background:#eef4ff;border-color:#1a6fd430">低PBR</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+2.20%</span></td>
+      <td class="num-cell">1,504億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-3.3%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#11</td>
+      <td class="code-cell">
+        <div class="stock-code">2501</div>
+        <div class="stock-name">サッポロＨＤ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+1.10%</span></td>
+      <td class="num-cell">6,627億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-10.9%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#12</td>
+      <td class="code-cell">
+        <div class="stock-code">7205</div>
+        <div class="stock-name">日野自</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+1.21%</span></td>
+      <td class="num-cell">2,388億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="neg">-15.9%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#13</td>
+      <td class="code-cell">
+        <div class="stock-code">5351</div>
+        <div class="stock-name">品川リフラ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+1.95%</span></td>
+      <td class="num-cell">1,049億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-8.3%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#14</td>
+      <td class="code-cell">
+        <div class="stock-code">9505</div>
+        <div class="stock-name">北陸電</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▮▯▯▯▯</span> <span class="score-num">2pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+3.25%</span></td>
+      <td class="num-cell">2,188億</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-8.3%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#15</td>
+      <td class="code-cell">
+        <div class="stock-code">285A</div>
+        <div class="stock-name">キオクシア</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+      <td class="num-cell"><span class="na">—</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#16</td>
+      <td class="code-cell">
+        <div class="stock-code">7974</div>
+        <div class="stock-name">任天堂</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+7.31%</span></td>
+      <td class="num-cell">11.3兆</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-33.8%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#17</td>
+      <td class="code-cell">
+        <div class="stock-code">6920</div>
+        <div class="stock-name">レーザーテク</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+2.44%</span></td>
+      <td class="num-cell">3.2兆</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-11.7%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#18</td>
+      <td class="code-cell">
+        <div class="stock-code">9984</div>
+        <div class="stock-name">ＳＢＧ</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-new">NEW</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+8.73%</span></td>
+      <td class="num-cell">22.5兆</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-43.0%</span></td>
+    </tr>
+    <tr class="stock-row">
+      <td class="rank-cell">#19</td>
+      <td class="code-cell">
+        <div class="stock-code">6857</div>
+        <div class="stock-name">アドテスト</div>
+      </td>
+      <td class="score-cell"><span class="score-bars">▮▯▯▯▯▯</span> <span class="score-num">1pt</span></td>
+      <td class="ap-cell"><span class="ap ap-watch">1日</span></td>
+      <td class="tags-cell"><span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span></td>
+      <td class="num-cell">¥{:,.0f}</td>
+      <td class="num-cell"><span class="pos">+2.97%</span></td>
+      <td class="num-cell">18.0兆</td>
+      <td class="num-cell">{:.2f}x</td>
+      <td class="num-cell">{:.1f}x</td>
+      <td class="num-cell">{:.2f}%</td>
+      <td class="num-cell"><span class="neg">-15.6%</span></td>
+    </tr></tbody>
+</table>
+</div>
+<div class="legend">
+  <div class="legend-title">DROP SCORING LOGIC</div>
+  <div class="legend-grid">
+    
+    <div class="legend-item">
+      <span class="tag" style="color:#c93030;background:#fff0ee;border-color:#c9303030">値下がり</span>
+      <span>+3pt：当日値下がり率ランキング上位</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#b8360a;background:#fff0ea;border-color:#b8360a30">出来高急増</span>
+      <span>+3pt：売買代金急増率ランキング上位</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#1a6fd4;background:#eef4ff;border-color:#1a6fd430">低PBR</span>
+      <span>+2pt：PBR低位（解散価値割れ圏）</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#1a55a8;background:#e8f0ff;border-color:#1a55a830">低PER</span>
+      <span>+2pt：PER低位（割安益回り）</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#7a3a9e;background:#f5eeff;border-color:#7a3a9e30">年初来安値</span>
+      <span>+2pt：年初来安値更新銘柄</span>
+    </div>
+    <div class="legend-item">
+      <span class="tag" style="color:#7a5c1a;background:#fdf6e3;border-color:#7a5c1a30">売買代金上位</span>
+      <span>+1pt：当日売買代金ランキング上位</span>
+    </div>
+    <div class="legend-item"><span class="ap ap-new">NEW</span> 初登場（過去5日に出現なし）</div>
+    <div class="legend-item"><span class="ap ap-watch">N日</span> 直近5日間で1〜2回出現</div>
+    <div class="legend-item"><span class="ap ap-hot">🔴 N日</span> 直近5日間で3回以上出現</div>
+  </div>
+</div>
+</div>
+
+<script>
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn');
+  document.getElementById('tab-' + tab).classList.add('show');
+  btn.classList.add(tab === 'rise' ? 'active-rise' : 'active-drop');
+}
+</script>
+
+<footer>
+  <span>PERSONAL RESEARCH TOOL — NOT INVESTMENT ADVICE</span>
+  <span>日経電子版 + yfinance | 2026-03-11 00:45</span>
+</footer>
+</div>
+</body>
+</html>
